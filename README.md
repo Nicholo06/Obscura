@@ -62,5 +62,3 @@ The real use of this tool is **convenience**. Instead of manually running termin
 
 ---
 
-## License
-MIT License.
