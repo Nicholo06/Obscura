@@ -9,9 +9,8 @@ import sys
 # --- Configuration ---
 SOURCE_DIR = "./src"
 OUTPUT_DIR = "./dist"
-ZIP_NAME = "extension_ship.zip"
 
-# Obfuscation Settings for Manifest V3 (Security & Compliance)
+# Professional Obfuscation Settings for Manifest V3 (Security & Compliance)
 OBFUSCATION_FLAGS = [
     "--compact", "true",
     "--string-array", "true",
@@ -104,7 +103,16 @@ class ObfuscatorCLI:
             print("    Build cancelled.")
             return
 
+        # Prepare sanitized project name for folder and zip
+        sanitized_name = "".join([c if c.isalnum() or c in (' ', '-', '_') else '' for c in self.project_name]).strip().replace(' ', '_')
+        if not sanitized_name or sanitized_name.lower() == "unknown_extension":
+            sanitized_name = "obfuscated_extension"
+        
+        zip_filename = f"{sanitized_name}.zip"
+
         print("\n    Initializing build sequence...")
+        start_time = time.time()
+        
         if os.path.exists(OUTPUT_DIR): shutil.rmtree(OUTPUT_DIR)
         os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -114,7 +122,6 @@ class ObfuscatorCLI:
                 all_files.append(os.path.join(root, f))
         
         total = len(all_files)
-        start_time = time.time()
 
         for i, src_file in enumerate(all_files, 1):
             rel_path = os.path.relpath(src_file, SOURCE_DIR)
@@ -136,9 +143,9 @@ class ObfuscatorCLI:
                 shutil.copy2(src_file, dest_file)
                 self.stats["copied"] += 1
 
-        print(f"\n\n    Finalizing: Creating {ZIP_NAME}...")
+        print(f"\n\n    Finalizing: Creating {zip_filename}...")
         try:
-            with zipfile.ZipFile(ZIP_NAME, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            with zipfile.ZipFile(zip_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
                 for root, _, files in os.walk(OUTPUT_DIR):
                     for f in files:
                         fp = os.path.join(root, f)
@@ -146,12 +153,8 @@ class ObfuscatorCLI:
         except Exception as e:
             print(f"    Zip Error: {e}")
 
-        sanitized_name = "".join([c if c.isalnum() or c in (' ', '-', '_') else '' for c in self.project_name]).strip().replace(' ', '_')
-        if not sanitized_name or sanitized_name.lower() == "unknown_extension":
-            sanitized_name = "obfuscated_extension"
-        
+        # Rename dist to Project Name
         final_output_path = os.path.join(os.path.dirname(OUTPUT_DIR), sanitized_name)
-        
         try:
             if os.path.exists(final_output_path) and os.path.abspath(final_output_path) != os.path.abspath(OUTPUT_DIR):
                 shutil.rmtree(final_output_path)
@@ -166,7 +169,7 @@ class ObfuscatorCLI:
         print(f"    - JS Files Protected: {self.stats['obfuscated']}")
         print(f"    - Asset Files Moved:  {self.stats['copied']}")
         print(f"    - Output Folder:      {final_output_path}")
-        print(f"    - Ready to Ship:      {ZIP_NAME}")
+        print(f"    - Ready to Ship:      {zip_filename}")
         print("    " + "="*40)
 
 if __name__ == "__main__":
